@@ -1,0 +1,142 @@
+---
+title: "Practical Machine Learning Course Project"
+output:
+  pdf_document: default
+  html_document: default
+---
+### Executive Summary 
+
+The goal of this project was to use data from accelerometers on the belt, forearm, arm and dumbell of 6 people. Each of them performed an exercise correctly and incorrectly 5 different ways. In the end, I wanted to find out the manner in which they did the exercise which is represented by the "classe" variable in the training set. 
+
+### Data Sources 
+1) https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+2) https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+3) http://groupware.les.inf.puc-rio.br/har
+
+
+### Data Preparation
+
+For the data preparation I loaded the training and testing data set into R and then saw the structure of the data. I then took out the indices which indicated the columns to remove in the updated training and testing set. I chose the column indices where it was either blank space or had 95% NA's in the data. I also then removed columns 1-7 and partitioned the training and testing set. I created 80% training data and 20% testing data. For the test set, I removed the partitioned training data to later test it later on.
+```{r echo = TRUE}
+#Check current working directory 
+getwd()
+#Load needed packages and libraries 
+library(readr)
+#Load the data into R using read_csv
+training_data_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testing_data_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+#Read in the csv files using read_csv which takes care of dates and 
+#url file connections
+training <- read_csv(training_data_url)
+testing <- read_csv(testing_data_url)
+#See the column names, first 6 rows of data, dimension, and structure
+colnames(training)
+head(training)
+dim(training)
+str(training)
+colnames(testing)
+head(testing)
+dim(testing)
+str(testing)
+#Clean the training set and get rid of the NA columns that have at least
+#95% na values
+x_training <- which(colSums(is.na(training) | training == "") > 0.95*dim(training)[1])
+x_training_updated <- training[,-x_training]
+x_training_updated <- x_training_updated[,-c(1:7)]
+dim(x_training_updated)
+#Clean the test set like the previous example
+x_test <- which(colSums(is.na(testing) | testing == "") > 0.95*dim(testing)[1])
+x_test_updated <- testing[,-x_test]
+x_test_updated <- x_test_updated[,-1]
+dim(x_test_updated)
+#Attempt classification method here
+library(caret)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+library(randomForest)
+library(e1071)
+library(mlbench)
+#Partition training set. Using 80% training and 20% testing 
+#Set the seed for reproducibility
+set.seed(1)
+#Create training partitioned data
+training_partitioned <- createDataPartition(x_training_updated[["classe"]], p = 0.80, list = FALSE)
+#Create training and test set and check the dimensions
+Train <- x_training_updated[training_partitioned, ]
+Test <- x_training_updated[-training_partitioned,]
+dim(Train)
+dim(Test)
+```
+
+### Classification Tree Method
+
+I first decided to implement a classification tree to see if it was accurate to test the predictors. I used a cross validation method that had 10 folds in order to truly increase the accuracy and so called "folds" to divide the data to implement training. Cross validation is one of the most popular approaches when creating the training set. However, as the model was built with the variables under the names, the accuracy of the model was not too good at only about a 49% level. I then decided to try a random forest approach. 
+```{r echo = TRUE}
+#Attempt classification method here
+library(caret)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+library(randomForest)
+library(e1071)
+library(mlbench)
+#Specify the method for trainControl. Use cross validated method
+#with 10 folds to increase accuracy when testing the data
+train_control <- trainControl(method = "cv", number = 10)
+#Set the seed again for reprocubility and use decision tree
+set.seed(1)
+tree_model <- train(classe~., data = Train, method = "rpart", trControl = train_control)
+#See the plot
+fancyRpartPlot(tree_model[["finalModel"]])
+#Use the classification tree on the test set
+train_predicted_model <- predict(tree_model, newdata = Test)
+#View the information and overall results 
+conf_matrix <- confusionMatrix(table(Test[["classe"]],train_predicted_model))
+#Create the overall confusion matrix and check the accuracy
+conf_matrix
+conf_matrix[["overall"]][1]
+#See the names of the variables used
+names(tree_model[["finalModel"]])
+```
+
+### Random Forest Method 
+
+Random Forest method is one of the most popular methods for machine learning as well. I then implemented similar steps except this time I changed the method from rpart (classification tree) to rf (random forest) with 100 trees. The model then yielded a higher accuracy at 99.5% and a very low out of sample error. The estimate error rate was only at 0.73% which yielded a very good fitting model. 
+```{r echo = TRUE}
+#Load needed libraries again
+library(caret)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+library(randomForest)
+library(e1071)
+library(mlbench)
+#Random Forest method
+set.seed(2)
+#Create random forest
+forest <- train(classe~., data = Train, method = "rf", trControl = train_control, ntree = 100)
+print(forest)
+forest[["finalModel"]]
+#Plot the forest error and the confusion matrix
+plot(forest)
+train_prediction_forest <- predict(forest, newdata = Test)
+conf_matrix_forest <- confusionMatrix(table(Test[["classe"]],train_prediction_forest))
+conf_matrix_forest[["overall"]][1]
+names(forest[["finalModel"]])
+forest[["finalModel"]][["classes"]]
+plot(forest[["finalModel"]], main = "Trees vs Error")
+```
+
+
+### Testing Stage
+
+This particular stage, this is where the algorithm will be put to the test for the 
+quiz. 
+```{r echo = TRUE}
+Final_Prediction <- predict(forest, newdata = x_test_updated)
+Final_Prediction
+```
