@@ -1,46 +1,61 @@
 ---
 title: "Developing Data Products Final Project"
 author: "Andrew Delos Santos"
-date: "9/24/2019"
-output: ioslides_presentation
+date: "9/18/2019"
+output: html_document
 runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Project Summary
+This final project for the Developing Data Products course is based off of the Regression Models Final Project that was done earlier in the specialization. Previously, we analyzed the relationship between a certain set of variables and the miles per gallon. We aimed to answer two questions:  
+    
+    1. "Is an automatic or manual transmission better for MPG?"
+    2. "Quantify the MPG difference between automatic and 
+        manual transmissions." 
 
-This R Markdown presentation is made interactive using Shiny. The app gives a 
-blank map of Italy and helps you see the different regions within Italy. When
-you select from the drop down menu, it allows you to pick a region which will
-then be highlighted in red. The output below shows the first 6 regions in Italy.
+## Inputs and Outputs
 
-```{r echo = FALSE}
-library(shiny)
-library(maps)
-library(mapdata)
-library(ggplot2)
+You can embed Shiny inputs and outputs in your document. Outputs are automatically updated whenever inputs change.  This demonstrates how a standard R plot can be made interactive by wrapping it in the Shiny `renderPlot` function. The `selectInput` and `sliderInput` functions create the input widgets used to drive the plot.
 
-italy_states <- map_data("italy")
-head(italy_states)
+```{r eruptions, echo=FALSE}
+inputPanel(
+  selectInput("n_breaks", label = "Number of bins:",
+              choices = c(10, 20, 35, 50), selected = 20),
+  
+  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
+              min = 0, max = 1, value = 1, step = 0.1)
+)
+
+renderPlot({
+multivariable_model <- lm(mtcars$mpg ~ mtcars[["am"]] + mtcars[["cyl"]] + 
+mtcars[["disp"]] + mtcars[["hp"]] + mtcars[["wt"]], mtcars)
+r <- resid(multivariable_model)
+hist(r, probability = TRUE)
+  
+})
 ```
 
-## How it Operates
--The app is operated through shiny with includes two source code files
+## Embedded Application
 
--The first one is the **server.R** source code and the other is the **ui.R**
- source code
- 
--The app uses both the libraries maps and mapdata to produce the Italy map
+It's also possible to embed an entire Shiny application within an R Markdown document using the `shinyAppDir` function. This example embeds a Shiny application located in another directory:
 
-## Instructions
--From the menu, pick a region in Italy
+```{r tabsets, echo=FALSE}
+shinyAppDir(
+  system.file("examples/06_tabsets", package = "shiny"),
+  options = list(
+    width = "100%", height = 550
+  )
+)
+```
 
--The chosen region will appear red
+Note the use of the `height` parameter to determine how much vertical space the embedded application should occupy.
 
-## Links to App and Code on Github
-https://github.com/Andrew20663/DLSPortfolio
-https://andrew20663.shinyapps.io/developing_data_products/
+You can also use the `shinyApp` function to define an application inline rather then in an external directory.
+
+In all of R code chunks above the `echo = FALSE` attribute is used. This is to prevent the R code within the chunk from rendering in the document alongside the Shiny components.
+
+
 

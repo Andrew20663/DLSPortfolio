@@ -1,0 +1,115 @@
+---
+title: "Statistical Inference: Siumulation Exercise"
+output: pdf_document
+---
+###Part 1: Simulation Exercise
+
+Synopsis: For this particular project I invesigated the exponential distribution
+in R and compared it with the Central Limit Theorem. The exponential distribution
+has a rate parameter of lambda where mean is 1/lambda. I ran a simulation on 40 
+exponentials. 
+
+###Simulation of Mean of Exponential Random Variable
+```{r echo = TRUE}
+#Set given parameters for simulation of the exponential random variable
+#Use rexp function with 1000 simulations of 40 exponentials
+set.seed(10)
+simulation <- data.frame(ncol = 2, nrow = 1000)
+names(simulation) <- c("simulation", "mean")
+#Create for loop to build the data frame for 1-1000 where column 1 is filled
+#with the number of the simulation and the 2nd column is the mean of the 
+#random exponential distribution with given parameters n=40 and lambda=0.2
+for(i in 1:1000) {
+  simulation[i,1] <- i
+  simulation[i,2] <- mean(rexp(40,0.2))
+  }
+```
+
+
+###Sample Mean vs. Theoretical Mean:
+From Central Limit Theorem, an exponential follows distribution with mean 1/lam.
+The mean is 5 when you calculate it. 
+```{r echo=TRUE}
+#Calculate both theoretical and sample mean
+theoretical_mean <- 1/0.2
+simulated_mean <- mean(simulation[["mean"]])
+print(theoretical_mean)
+print(simulated_mean)
+```
+
+###Histogram of the Simulation of Means vs. Theoretical Mean Line
+```{r echo = TRUE}
+library(ggplot2)
+#Create histogram plot with density on y-axis and mean on x-axis
+#Red vertical line shows theoretical mean while green shows mean of simulated
+#exponential random variables
+ggplot(simulation, aes(mean, ..density..)) + geom_histogram(col = "blue") +
+xlab("Simulated mean") + ylab("Density") + ggtitle("Simulated Mean of 
+Exponential Random Variable") + geom_vline(xintercept=5, color = "red") +
+geom_vline(xintercept = 5.04506, color = "green") + 
+theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+                                                    
+```
+
+
+###Sample Variance vs. Theoretical Variance
+```{r echo =TRUE}
+set.seed(10)
+#Set given parameters for simulation of the exponential random variable
+#Use rexp function with 1000 simulations of 40 exponentials
+set.seed(10)
+simulation_var <- data.frame(ncol = 2, nrow = 1000)
+names(simulation_var) <- c("simulation", "variance")
+#Same as in mean step except this time for the variance 
+for(i in 1:1000) {
+  simulation_var[i,1] <- i
+  simulation_var[i,2] <- mean(rexp(40,0.2))
+  }
+```
+
+
+```{r echo = TRUE}
+#Calculate both theoretical and simulated means variance
+theoretical_variance <- 1/(0.2^2)/40
+simulated_variance <- (sd(simulation_var[["variance"]]))^2
+print(theoretical_variance)
+print(simulated_variance)
+```
+
+###Histogram of Sample Variance 
+```{r echo = TRUE}
+library(ggplot2)
+#Plot histogram
+ggplot(simulation_var, aes(variance, ..density..)) + geom_histogram(col = "blue") +
+xlab("Simulated Mean") + ylab("Density") + ggtitle("Variance of Simulated Means
+vs. Theoretical for Exponential Random Variable") +
+theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+```
+
+###Check if Exponential is approximately Normal
+```{r echo=TRUE}
+library(ggplot2)
+#Create Normal Distribution curve to be put around the histogram 
+x_axis_norm <- seq(min(simulation[["mean"]]), max(simulation[["mean"]]), 
+length.out = 1000)
+y_axis_norm <- dnorm(x_axis_norm, 1/0.2, (1/.2)/sqrt(40), log = FALSE)
+
+#Plot the historgram
+ggplot(simulation, aes(mean, ..density..)) + geom_histogram(col = "blue") +
+xlab("Simulated mean") + ylab("Density") + ggtitle("Simulated Mean of 
+Exponential Random Variable") + geom_vline(xintercept=5, color = "red") +
+geom_vline(xintercept = 5.04506, color = "green") + 
+geom_line(aes(x_axis_norm,y_axis_norm)) + 
+theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+```
+###Results: 
+
+Overall, in the above figures, we see that the 40 exponential random
+variables simulation does follow a normal distribution with 1000 simulations.
+In the first plot, we see that the theoretical mean is 5 represented by the red 
+line and the mean ofthe simulated random variables is 5.04506 shown by the green
+line. The final distribution showing that the data is approximately normal.
+
+
+
+

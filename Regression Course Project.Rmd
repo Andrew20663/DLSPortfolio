@@ -1,0 +1,115 @@
+---
+title: "Regression Models Project"
+output:
+  pdf_document: 
+  fontsize: 5 pt
+  geometry: margin = 0.5 in
+---
+### Executive Summary
+
+In this particular report, I looked at a data set of collection of cars and was 
+interested in exploring the relationships between a set of variables and miles 
+per gallon (the outcome). The goal was to answer two particular questions: 
+  1) "Is an automatic or manual transmission better for MPG?"
+  2) "Quantify the MPG difference between automatic and 
+      manual transmissions." 
+These two questions were answered in which we saw that automatic transmission 
+is worse for MPG and that the manual is better for mpg in the given boxplot. 
+From the regression analysis, we were able to quantify these values in which
+automatic had a slope of 17.14737 and that manual had a slope of 24.39231. 
+The difference between these two values is 7.24494. The interpretation of each 
+slope is that for there is that for every 17.14737 miles gone, 1 gallon is used.
+Also, for every 24.39231 miles gone, one gallon is used. However, the R^2 value
+represents that only 35.98% of the variation in y (mpg) can be explained by x
+(transmission). Therefore, I created more a multivariable model and included 
+this predictor since it was indeed significant at a .05 alpha significance level.
+From the multivariable model, the model was also significant and the R^2 value 
+much larger where adjusted R^2 was 0.8344. 83.44% of the variation in mpg could
+be explained by the tranmsission, cylinder, horsepower and weight of the car which
+were significant at the .05 level. Also, the AIC and BIC values were lower than 
+that of the single variable model which is a better model. The residuals were also
+approximately normal through plots and the Shapiro test. So overall, both questions
+were answered and the multivariable model was accurate.
+
+### Exploratory Data Analysis
+```{r echo = TRUE}
+#Get some information regarding the data set mtcars
+?mtcars
+#Load the mtcars data set
+data(mtcars)
+#See the structure of the data along with each variable
+#and their particular class
+str(mtcars)
+#See the first 6 values
+head(mtcars)
+#See the names of the variables for the data set
+names(mtcars)
+#Convert transmission, engine shape, carbeurator, cylinder
+#and gear to factor variables
+mtcars[["am"]] <- factor(mtcars[["am"]], levels = c(0,1), labels = c("Auto", "Manual"))
+mtcars[["vs"]] <- factor(mtcars[["vs"]])
+mtcars[["carb"]] <- factor(mtcars[["carb"]])
+mtcars[["cyl"]] <- factor(mtcars[["cyl"]])
+mtcars[["gear"]] <- factor(mtcars[["gear"]])
+#Exploratory plots are in the appendix
+```
+
+### Regression Analysis
+```{r echo=TRUE}
+#Subset the data of mtcars outcome mpg as a linear model
+#or function of transmission type and calculate the mean
+#for the subset
+aggregate(mtcars[["mpg"]] ~ mtcars[["am"]], mtcars, mean)
+#Create two variables to set boolean equal to character string of Auto and 
+#manual
+a <- mtcars[mtcars[["am"]] == "Auto",]
+m <- mtcars[mtcars[["am"]] == "Manual",]
+#Conduct t-test both subsetted data
+t.test(a[["mpg"]], m[["mpg"]])
+auto_manual_t_test <- t.test(a[["mpg"]], m[["mpg"]])
+#Create confidence interval
+auto_manual_t_test[["conf.int"]]
+#See the validity of a linear model with just mpg and transmission type 
+linear_model_1 <- lm(mtcars$mpg ~ mtcars[["am"]], mtcars)
+#Calculate the summary and AIC and BIC values
+summary(linear_model_1)
+AIC(linear_model_1)
+BIC(linear_model_1)
+#Values indicate a positive outcome, add more predictors to the model from the
+#pairs plot in the appendix 
+multivariable_model <- lm(mtcars$mpg ~ mtcars[["am"]] + mtcars[["cyl"]] + 
+mtcars[["disp"]] + mtcars[["hp"]] + mtcars[["wt"]], mtcars)
+#See analysis of variance summary on both models
+anova(linear_model_1, multivariable_model)
+#See just the summary for the multi-variable model and see the AIC and BIC values
+summary(multivariable_model)
+AIC(multivariable_model)
+BIC(multivariable_model)
+#Calculate the residuals of the multi-variable model
+r <- resid(multivariable_model)
+#Regression plots are in the appendix
+```
+
+### Appendix
+```{r echo = TRUE}
+#Exploratory Analysis Plots
+
+#Create boxplot to see quartiles and if there are any outliers
+library(ggplot2)
+ggplot(mtcars, aes(mtcars[["am"]], mtcars[["mpg"]], fill = mtcars[["am"]])) +
+geom_boxplot() + facet_wrap(. ~ mtcars[["am"]]) + xlab("Transmission Type") +
+ylab("MPG") + guides(fill = guide_legend(title = "Transmission Type"))
+#Create plot to see which variables seem to have a correlation
+pairs(mtcars$mpg ~ ., mtcars)
+
+#Regression Analysis Plots
+#Analyze the residuals and conduct tests for normality
+par(mfrow = c(3,1))
+hist(r, probability = TRUE)
+lines(density(r), col = "red")
+qqnorm(r)
+qqline(r, col = "red")
+var(r)
+shapiro.test(r)
+plot(r)
+```
